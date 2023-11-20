@@ -1,7 +1,7 @@
-//  ChickenTender-Backend/routes/restaurantRoutes.js
-
+// ./routes/restaurantRoutes.js
 import { Router } from "express";
 import { fetchNearbyRestaurants } from "../controllers/restaurantController.js";
+
 const router = Router();
 
 router.get("/nearby", fetchNearbyRestaurants);

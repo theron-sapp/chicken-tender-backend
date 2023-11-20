@@ -1,4 +1,4 @@
-//  ChickenTender-Backend/models/User.js
+//  Chicken-Tender-Backend/models/User.js
 
 import mongoose from "mongoose";
 

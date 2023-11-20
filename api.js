@@ -1,3 +1,5 @@
+// api.js
+
 import { YELP_API_KEY } from "@env"; // Make sure to add your Yelp API Key to your environment variables
 import { jsonData } from "../data";
 

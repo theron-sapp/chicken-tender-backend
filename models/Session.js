@@ -1,4 +1,4 @@
-//  ChickenTender-Backend/models/Session.js
+// Chicken-Tender-Backend/models/Session.js
 
 import mongoose from "mongoose";
 
@@ -9,6 +9,23 @@ const sessionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },
   userStatuses: [{ userId: String, hasVoted: Boolean }],
+  restaurants: [
+    {
+      id: String, // Yelp ID of the restaurant
+      name: String,
+      image: String,
+      address: String,
+      rating: Number,
+      votes: Number,
+      cuisine: String,
+      price: String,
+      distance: Number,
+      url: String,
+      reviewCount: Number,
+      // ...other restaurant fields...
+    },
+  ],
+  // ... other session fields ...
 });
 
 sessionSchema.index(

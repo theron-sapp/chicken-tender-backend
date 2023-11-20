@@ -1,4 +1,4 @@
-//  ChickenTender-Backend/utils/sessionUtils.js
+//  Chicken-Tender-Backend/utils/sessionUtils.js
 
 import { randomBytes } from "crypto";
 
