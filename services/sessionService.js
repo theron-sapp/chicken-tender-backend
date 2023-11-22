@@ -1,4 +1,4 @@
-// ./services/sessionService.js
+// chicken-tender-backend/services/sessionService.js
 
 import Session from "../models/Session.js";
 import { generateSessionCode } from "../utils/sessionUtils.js";
@@ -45,8 +45,9 @@ export const createSession = async (userId, param1, param2, radiusInMeters) => {
     const newSession = await Session.create({
       code,
       users: [userId],
+      sessionCreator: userId, // Save the session creator
       expiresAt,
-      restaurants, // This assumes restaurants is an array of restaurant objects
+      restaurants,
       lobbyOpen,
     });
 

@@ -10,6 +10,7 @@ const sessionSchema = new mongoose.Schema({
   expiresAt: { type: Date, required: true },
   userStatuses: [{ userId: String, hasVoted: Boolean }],
   lobbyOpen: { type: Boolean, required: true },
+  sessionCreator: { type: String, required: true }, // Add this field
   restaurants: [
     {
       id: String, // Yelp ID of the restaurant

@@ -16,7 +16,8 @@
     "express-rate-limit": "^7.1.4",
     "express-validator": "^7.0.1",
     "mongoose": "^8.0.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "socket.io": "^4.7.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

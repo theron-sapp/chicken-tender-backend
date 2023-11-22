@@ -1,4 +1,4 @@
-// ./routes/sessionRoutes.js
+// chicken-tender-backend/routes/sessionRoutes.js
 import { Router } from "express";
 import {
   createSession,

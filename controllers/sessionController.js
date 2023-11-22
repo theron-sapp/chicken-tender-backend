@@ -3,6 +3,7 @@
 import * as sessionService from "../services/sessionService.js";
 import * as votingService from "../services/votingService.js";
 import { checkDailySessionLimit } from "../services/userService.js";
+import { io } from "./server.js";
 import { param } from "express-validator";
 
 export const createSession = async (req, res, next) => {
@@ -34,13 +35,14 @@ export const joinSession = async (req, res, next) => {
     const { userId } = req.body;
 
     const session = await sessionService.joinSession(code, userId);
+    io.to(code).emit("userJoined", { userId });
 
     res.status(200).json({ message: "Joined session", session });
   } catch (error) {
     if (error.message === "Lobby is closed for voting") {
       return res.status(403).json({ message: error.message });
     }
-    next(error); // Pass any errors to the error handling middleware
+    next(error);
   }
 };
 

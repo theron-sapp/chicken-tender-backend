@@ -1,4 +1,4 @@
-// ./services/userService.js
+// chicken-tender-backend/services/userService.js
 
 import User from "../models/User.js";
 console.log(User);
