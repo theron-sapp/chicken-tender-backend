@@ -9,6 +9,7 @@ const sessionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },
   userStatuses: [{ userId: String, hasVoted: Boolean }],
+  lobbyOpen: { type: Boolean, required: true },
   restaurants: [
     {
       id: String, // Yelp ID of the restaurant
@@ -22,10 +23,8 @@ const sessionSchema = new mongoose.Schema({
       distance: Number,
       url: String,
       reviewCount: Number,
-      // ...other restaurant fields...
     },
   ],
-  // ... other session fields ...
 });
 
 sessionSchema.index(

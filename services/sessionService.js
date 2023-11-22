@@ -75,12 +75,21 @@ export const joinSession = async (code, userId) => {
     throw new Error("Session not found");
   }
 
-  if (!session.users.includes(userId)) {
+  if (!session.users.includes(userId) && session.lobbyOpen.valueOf(true)) {
     session.users.push(userId);
     await session.save();
+  } else if (session.lobbyOpen.valueOf(false)) {
+    throw new Error("Lobby no longer open");
   }
 
   return session; // Return the updated session
 };
 
-// Other session related logic...
+export const getSessionDetails = async (code) => {
+  const session = await Session.findOne({ code });
+  if (!session) {
+    throw new Error("Session not found");
+  } else {
+    return session;
+  }
+};

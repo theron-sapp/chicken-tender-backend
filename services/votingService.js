@@ -63,5 +63,3 @@ export const tallyVotes = async (code) => {
   // Respond with the winning restaurant.
   return { winningRestaurant, tally };
 };
-
-// ... (any other voting-related functions you may need)

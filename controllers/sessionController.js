@@ -75,3 +75,12 @@ export const getSessionResults = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getSession = async (req, res, next) => {
+  try {
+    const { code } = req.params;
+    const details = await sessionService.getSessionDetails(code);
+  } catch (error) {
+    next(error);
+  }
+};

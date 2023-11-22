@@ -38,5 +38,3 @@ export const checkDailySessionLimit = async (userId) => {
 
   return user; // return the user with the updated attempts
 };
-
-// Add other user related logic and functions as needed...
