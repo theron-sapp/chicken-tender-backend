@@ -3,17 +3,18 @@
 import * as sessionService from "../services/sessionService.js";
 import * as votingService from "../services/votingService.js";
 import { checkDailySessionLimit } from "../services/userService.js";
+import { param } from "express-validator";
 
 export const createSession = async (req, res, next) => {
   try {
-    const { userId, latitude, longitude, radiusInMeters } = req.body;
+    const { userId, param1, param2, radiusInMeters } = req.body;
 
     // Before creating a session, check if the user has reached the daily limit
     await checkDailySessionLimit(userId);
     const newSession = await sessionService.createSession(
       userId,
-      latitude,
-      longitude,
+      param1,
+      param2,
       radiusInMeters
     );
     res.status(201).json(newSession);

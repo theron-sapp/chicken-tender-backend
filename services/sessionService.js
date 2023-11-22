@@ -3,14 +3,9 @@
 import Session from "../models/Session.js";
 import { generateSessionCode } from "../utils/sessionUtils.js";
 import User from "../models/User.js";
-import { fetchRestaurantsData } from "./restaurantService.js";
+import { fetchNearbyRestaurants } from "../controllers/restaurantController.js";
 
-export const createSession = async (
-  userId,
-  latitude,
-  longitude,
-  radiusInMeters
-) => {
+export const createSession = async (userId, param1, param2, radiusInMeters) => {
   const today = new Date().setHours(0, 0, 0, 0);
   let user = await User.findOne({ userId });
 
@@ -39,21 +34,38 @@ export const createSession = async (
       isUnique = true;
     }
   }
+  try {
+    const restaurants = await fetchNearbyRestaurants(
+      param1,
+      param2,
+      radiusInMeters
+    );
 
-  const restaurants = await fetchRestaurantsData(
-    latitude,
-    longitude,
-    radiusInMeters
-  );
+    const newSession = await Session.create({
+      code,
+      users: [userId],
+      expiresAt,
+      restaurants, // This assumes restaurants is an array of restaurant objects
+    });
 
-  const newSession = await Session.create({
-    code,
-    users: [userId],
-    expiresAt,
-    restaurants, // This assumes restaurants is an array of restaurant objects
-  });
+    return newSession;
+  } catch (error) {
+    console.log(`Error: ${error}`);
+  }
+  // const restaurants = await fetchNearbyRestaurants(
+  //   param1,
+  //   param2,
+  //   radiusInMeters
+  // );
 
-  return newSession;
+  // const newSession = await Session.create({
+  //   code,
+  //   users: [userId],
+  //   expiresAt,
+  //   restaurants, // This assumes restaurants is an array of restaurant objects
+  // });
+
+  // return newSession;
 };
 
 export const joinSession = async (code, userId) => {
