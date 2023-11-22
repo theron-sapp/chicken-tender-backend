@@ -26,6 +26,12 @@ const sessionSchema = new mongoose.Schema({
       reviewCount: Number,
     },
   ],
+  userVotes: [
+    {
+      userId: String,
+      hasVoted: { type: Boolean, default: false },
+    },
+  ],
 });
 
 sessionSchema.index(

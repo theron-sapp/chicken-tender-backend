@@ -17,6 +17,8 @@ export const fetchNearbyRestaurants = async (
   param2,
   radiusInMeters
 ) => {
+  console.log(`Fetching restaurants with:`, { param1, param2, radiusInMeters }); // Log the parameters
+
   try {
     let restaurants;
 

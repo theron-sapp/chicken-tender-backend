@@ -3,12 +3,13 @@
 import * as sessionService from "../services/sessionService.js";
 import * as votingService from "../services/votingService.js";
 import { checkDailySessionLimit } from "../services/userService.js";
-import { io } from "./server.js";
+import { io } from "../server.js";
 import { param } from "express-validator";
 
 export const createSession = async (req, res, next) => {
   try {
     const { userId, param1, param2, radiusInMeters } = req.body;
+    console.log(`Received params:`, { userId, param1, param2, radiusInMeters }); // Log the parameters
 
     // Before creating a session, check if the user has reached the daily limit
     await checkDailySessionLimit(userId);
@@ -35,7 +36,7 @@ export const joinSession = async (req, res, next) => {
     const { userId } = req.body;
 
     const session = await sessionService.joinSession(code, userId);
-    io.to(code).emit("userJoined", { userId });
+    io.to(code).emit("user joined", { userId }); // Make sure this matches the client subscription
 
     res.status(200).json({ message: "Joined session", session });
   } catch (error) {
@@ -107,3 +108,17 @@ export const getSession = async (req, res, next) => {
     next(error);
   }
 };
+
+export async function checkAllUsersVoted(session, io) {
+  // Check if every user in the session has `hasVoted` set to true
+  const allDone = session.userVotes.every((u) => u.hasVoted);
+  if (allDone) {
+    // If all users have voted, emit an event to all clients
+    io.to(session.code).emit("voting complete");
+    // Optionally, calculate and emit the winning restaurant here
+    const results = await votingService.tallyVotes(session.code);
+    if (results.winningRestaurant) {
+      io.to(session.code).emit("results", results);
+    }
+  }
+}

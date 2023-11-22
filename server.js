@@ -5,6 +5,7 @@ import http from "http";
 import { Server } from "socket.io";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import Session from "./models/Session.js";
 
 // Import middlewares
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -52,7 +53,7 @@ io.on("connection", (socket) => {
     console.log(`User ${userId} joined session: ${sessionCode}`);
     socket.join(sessionCode);
     // Notify others in the session
-    socket.to(sessionCode).emit("user joined", userId);
+    socket.to(sessionCode).emit("userJoined", userId);
   });
 
   socket.on("start voting", async (sessionCode) => {
@@ -74,6 +75,30 @@ io.on("connection", (socket) => {
   socket.on("close session", (sessionCode) => {
     // You would also update the session's lobbyOpen status in the database here
     socket.to(sessionCode).emit("session closed");
+  });
+
+  // Inside the io.on("connection") callback
+  socket.on("done voting", async ({ sessionCode, userId }) => {
+    try {
+      const session = await Session.findOne({ code: sessionCode });
+      if (session) {
+        const userIndex = session.userVotes.findIndex(
+          (u) => u.userId === userId
+        );
+        if (userIndex !== -1) {
+          session.userVotes[userIndex].hasVoted = true;
+        } else {
+          // If the user hasn't been added to the userVotes array, add them
+          session.userVotes.push({ userId, hasVoted: true });
+        }
+        await session.save();
+
+        // Now call the checkAllUsersVoted function
+        checkAllUsersVoted(session, io); // Pass the io object to the function
+      }
+    } catch (error) {
+      console.error(`Error when updating vote status: ${error}`);
+    }
   });
 
   socket.on("disconnect", () => {
