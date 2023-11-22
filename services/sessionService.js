@@ -8,6 +8,7 @@ import { fetchNearbyRestaurants } from "../controllers/restaurantController.js";
 export const createSession = async (userId, param1, param2, radiusInMeters) => {
   const today = new Date().setHours(0, 0, 0, 0);
   let user = await User.findOne({ userId });
+  let lobbyOpen = true;
 
   if (!user) {
     user = await User.create({ userId, sessionCreationAttempts: [] });
@@ -46,6 +47,7 @@ export const createSession = async (userId, param1, param2, radiusInMeters) => {
       users: [userId],
       expiresAt,
       restaurants, // This assumes restaurants is an array of restaurant objects
+      lobbyOpen,
     });
 
     return newSession;
@@ -75,11 +77,15 @@ export const joinSession = async (code, userId) => {
     throw new Error("Session not found");
   }
 
-  if (!session.users.includes(userId) && session.lobbyOpen.valueOf(true)) {
+  // Check if the lobby is open. If it's not, throw an error.
+  if (!session.lobbyOpen) {
+    throw new Error("Lobby is closed for voting");
+  }
+
+  // If the lobby is open and the user is not already in the session, add them.
+  if (!session.users.includes(userId)) {
     session.users.push(userId);
     await session.save();
-  } else if (session.lobbyOpen.valueOf(false)) {
-    throw new Error("Lobby no longer open");
   }
 
   return session; // Return the updated session
@@ -92,4 +98,21 @@ export const getSessionDetails = async (code) => {
   } else {
     return session;
   }
+};
+
+export const closeSession = async (code) => {
+  const session = await Session.findOne({ code });
+
+  if (!session) {
+    throw new Error("Session not found");
+  }
+
+  if (!session.lobbyOpen) {
+    throw new Error("Session already closed.");
+  }
+
+  session.lobbyOpen = false;
+  await session.save();
+
+  return session; // Return the closed session
 };

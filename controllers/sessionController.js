@@ -37,7 +37,24 @@ export const joinSession = async (req, res, next) => {
 
     res.status(200).json({ message: "Joined session", session });
   } catch (error) {
+    if (error.message === "Lobby is closed for voting") {
+      return res.status(403).json({ message: error.message });
+    }
     next(error); // Pass any errors to the error handling middleware
+  }
+};
+
+export const closeSession = async (req, res, next) => {
+  try {
+    const { code } = req.params; // Get the code from the route parameter
+
+    await sessionService.closeSession(code);
+    res.status(200).json({ message: "Session closed for voting" });
+  } catch (error) {
+    if (error.message === "Session already closed.") {
+      return res.status(409).json({ message: error.message });
+    }
+    next(error); // Other errors are handled by the centralized error middleware
   }
 };
 
@@ -79,7 +96,11 @@ export const getSessionResults = async (req, res, next) => {
 export const getSession = async (req, res, next) => {
   try {
     const { code } = req.params;
-    const details = await sessionService.getSessionDetails(code);
+    const session = await sessionService.getSessionDetails(code);
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+    res.status(200).json(session);
   } catch (error) {
     next(error);
   }
