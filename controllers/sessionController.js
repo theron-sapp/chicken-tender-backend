@@ -109,7 +109,7 @@ export const getSession = async (req, res, next) => {
   }
 };
 
-export async function checkAllUsersVoted(session, io) {
+async function checkAllUsersVoted(session, io) {
   // Check if every user in the session has `hasVoted` set to true
   const allDone = session.userVotes.every((u) => u.hasVoted);
   if (allDone) {
@@ -122,3 +122,5 @@ export async function checkAllUsersVoted(session, io) {
     }
   }
 }
+
+export { checkAllUsersVoted };

@@ -16,6 +16,7 @@ import { createAccountLimiter } from "./middleware/rateLimit.js";
 // Import routes
 import restaurantRoutes from "./routes/restaurantRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js";
+import { checkAllUsersVoted } from "./controllers/sessionController.js";
 
 // Initialize environment variables
 dotenv.config();
@@ -46,7 +47,7 @@ app.use("/api/sessions", sessionRoutes);
 
 // Socket.io connection handler
 io.on("connection", (socket) => {
-  console.log("a user connected");
+  //console.log("a user connected");
 
   // Handle joining a session
   socket.on("join session", (sessionCode, userId) => {
@@ -87,9 +88,13 @@ io.on("connection", (socket) => {
         );
         if (userIndex !== -1) {
           session.userVotes[userIndex].hasVoted = true;
+          console.log(
+            `User ${userId} voting status: ${session.userVotes[userIndex].hasVoted}`
+          );
         } else {
           // If the user hasn't been added to the userVotes array, add them
           session.userVotes.push({ userId, hasVoted: true });
+          console.log(`User votes array: ${JSON.stringify(session.userVotes)}`);
         }
         await session.save();
 
