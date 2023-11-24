@@ -55,20 +55,6 @@ export const createSession = async (userId, param1, param2, radiusInMeters) => {
   } catch (error) {
     console.log(`Error: ${error}`);
   }
-  // const restaurants = await fetchNearbyRestaurants(
-  //   param1,
-  //   param2,
-  //   radiusInMeters
-  // );
-
-  // const newSession = await Session.create({
-  //   code,
-  //   users: [userId],
-  //   expiresAt,
-  //   restaurants, // This assumes restaurants is an array of restaurant objects
-  // });
-
-  // return newSession;
 };
 
 export const joinSession = async (code, userId) => {

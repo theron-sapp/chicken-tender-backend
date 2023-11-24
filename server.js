@@ -19,7 +19,9 @@ import sessionRoutes from "./routes/sessionRoutes.js";
 import { checkAllUsersVoted } from "./controllers/sessionController.js";
 
 // Initialize environment variables
-dotenv.config();
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
 
 // Create the Express application
 const app = express();
