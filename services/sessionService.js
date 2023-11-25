@@ -2,28 +2,14 @@
 
 import Session from "../models/Session.js";
 import { generateSessionCode } from "../utils/sessionUtils.js";
-import User from "../models/User.js";
 import { fetchNearbyRestaurants } from "../controllers/restaurantController.js";
 
-export const createSession = async (userId, param1, param2, radiusInMeters) => {
-  const today = new Date().setHours(0, 0, 0, 0);
-  let user = await User.findOne({ userId });
-  let lobbyOpen = true;
-
-  if (!user) {
-    user = await User.create({ userId, sessionCreationAttempts: [] });
-  }
-
-  const attemptsToday = user.sessionCreationAttempts.filter((attempt) => {
-    return new Date(attempt.date).setHours(0, 0, 0, 0) === today;
-  });
-
-  if (attemptsToday.length >= 10) {
-    throw new Error("Daily session creation limit reached.");
-  }
-  user.sessionCreationAttempts.push({ date: new Date() });
-  await user.save();
-
+export const createSession = async (
+  username,
+  param1,
+  param2,
+  radiusInMeters
+) => {
   let code;
   let isUnique = false;
   const expiresAt = new Date(new Date().getTime() + 2 * 60 * 60 * 1000); // 2 hours from now
@@ -35,6 +21,7 @@ export const createSession = async (userId, param1, param2, radiusInMeters) => {
       isUnique = true;
     }
   }
+
   try {
     const restaurants = await fetchNearbyRestaurants(
       param1,
@@ -44,52 +31,38 @@ export const createSession = async (userId, param1, param2, radiusInMeters) => {
 
     const newSession = await Session.create({
       code,
-      users: [userId],
-      sessionCreator: userId, // Save the session creator
+      users: [{ username }], // Changed to use an array of user objects
+      sessionCreator: username, // Now using username as the session creator
       expiresAt,
       restaurants,
-      lobbyOpen,
+      lobbyOpen: true, // This flag should start as true
     });
 
     return newSession;
   } catch (error) {
-    console.log(`Error: ${error}`);
+    console.error(`Error: ${error}`);
+    throw error; // Make sure to throw the error so it can be caught and handled by the caller
   }
-  // const restaurants = await fetchNearbyRestaurants(
-  //   param1,
-  //   param2,
-  //   radiusInMeters
-  // );
-
-  // const newSession = await Session.create({
-  //   code,
-  //   users: [userId],
-  //   expiresAt,
-  //   restaurants, // This assumes restaurants is an array of restaurant objects
-  // });
-
-  // return newSession;
 };
 
-export const joinSession = async (code, userId) => {
+export const joinSession = async (code, username) => {
   const session = await Session.findOne({ code });
 
   if (!session) {
     throw new Error("Session not found");
   }
 
-  // Check if the lobby is open. If it's not, throw an error.
   if (!session.lobbyOpen) {
     throw new Error("Lobby is closed for voting");
   }
 
-  // If the lobby is open and the user is not already in the session, add them.
-  if (!session.users.includes(userId)) {
-    session.users.push(userId);
+  const userExists = session.users.some((user) => user.username === username);
+  if (!userExists) {
+    session.users.push({ username });
     await session.save();
   }
 
-  return session; // Return the updated session
+  return session;
 };
 
 export const getSessionDetails = async (code) => {
@@ -116,4 +89,25 @@ export const closeSession = async (code) => {
   await session.save();
 
   return session; // Return the closed session
+};
+
+export const updateHasVotedBoolean = async (code, username) => {
+  const session = await Session.findOne({ code });
+
+  if (!session) {
+    throw new Error("Session not found");
+  }
+
+  // Find the user within the session
+  const user = session.users.find((user) => user.username === username);
+
+  if (!user) {
+    throw new Error("User not found in session");
+  }
+
+  user.hasVoted = true;
+
+  await session.save();
+
+  return session;
 };

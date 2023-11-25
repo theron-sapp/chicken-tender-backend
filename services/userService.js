@@ -1,8 +1,5 @@
 // chicken-tender-backend/services/userService.js
 
-import User from "../models/User.js";
-console.log(User);
-// This utility function checks if the provided date is today
 const isToday = (someDate) => {
   const today = new Date();
   return (

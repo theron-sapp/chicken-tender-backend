@@ -2,7 +2,7 @@
 
 import Session from "../models/Session.js";
 
-export const recordVote = async (code, userId, yelpBusinessId, userVote) => {
+export const recordVote = async (code, yelpBusinessId, userVote) => {
   const session = await Session.findOne({ code });
 
   if (!session) {

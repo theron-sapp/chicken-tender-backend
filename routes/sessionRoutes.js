@@ -7,6 +7,7 @@ import {
   getSessionResults,
   getSession,
   closeSession,
+  updateHasVotedController,
 } from "../controllers/sessionController.js";
 import {
   validateCreateSession,
@@ -16,11 +17,15 @@ import { createAccountLimiter } from "../middleware/rateLimit.js";
 
 const router = Router();
 
-router.post("/", [createAccountLimiter, validateCreateSession], createSession);
-router.post("/:code/join", validateJoinSession, joinSession);
+router.post("/", createSession);
+router.post("/:code/join", joinSession);
 router.post("/:code/vote", vote);
 router.patch("/:code/close", closeSession);
 router.get("/:code/results", getSessionResults);
 router.get("/:code/details", getSession);
+router.put(
+  "/session/:code/user/:username/donevoting",
+  updateHasVotedController
+);
 
 export default router;
