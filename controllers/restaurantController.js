@@ -47,27 +47,3 @@ export const fetchNearbyRestaurants = async (
     throw error; // Re-throw the error to be handled by the caller
   }
 };
-
-// export const fetchNearbyRestaurants = async (req, res, next) => {
-//   try {
-//     // param1 and param2 could either be numbers or strings
-//     const { param1, param2, radiusInMeters } = req.query;
-//     if (isNaN(param1) && isNaN(param2)) {
-//       let restaurants = await fetchRestaurantsDataWithCords(
-//         param1,
-//         param2,
-//         radiusInMeters
-//       );
-//     } else {
-//       let restaurants = await fetchRestaurantsDataNoCords(
-//         param1,
-//         param2,
-//         radiusInMeters
-//       );
-//     }
-
-//     res.status(200).json(restaurants);
-//   } catch (error) {
-//     next(error); // Error handling is now centralized
-//   }
-// };

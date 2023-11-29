@@ -45,23 +45,21 @@ app.use(createAccountLimiter);
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/sessions", sessionRoutes);
 
-// Socket.io connection handler
 io.on("connection", (socket) => {
-  //console.log("a user connected");
-
-  // Handle joining a session
-  socket.on("join session", (sessionCode, userId) => {
-    console.log(`User ${userId} joined session: ${sessionCode}`);
+  socket.on("join session", (sessionCode, username) => {
+    // Join the socket room
     socket.join(sessionCode);
-    // Notify others in the session
-    socket.to(sessionCode).emit("userJoined", userId);
+    // Additional logic
   });
 
   socket.on("start voting", async (sessionCode) => {
+    console.log(`Start voting received for session code: ${sessionCode}`);
+
     try {
       const session = await Session.findOne({ code: sessionCode });
       if (session) {
         session.lobbyOpen = false; // Close the lobby for new joins
+        session.votingCompleted = false; // Reset the flag
         await session.save();
 
         // Broadcast to all users in the session to start voting
@@ -72,44 +70,94 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle closing a session
-  socket.on("close session", (sessionCode) => {
-    // You would also update the session's lobbyOpen status in the database here
-    socket.to(sessionCode).emit("session closed");
-  });
-
-  // Inside the io.on("connection") callback
-  socket.on("done voting", async ({ sessionCode, userId }) => {
+  socket.on("done voting", async (sessionCode, username) => {
     try {
       const session = await Session.findOne({ code: sessionCode });
-      if (session) {
-        const userIndex = session.userVotes.findIndex(
-          (u) => u.userId === userId
-        );
-        if (userIndex !== -1) {
-          session.userVotes[userIndex].hasVoted = true;
-          console.log(
-            `User ${userId} voting status: ${session.userVotes[userIndex].hasVoted}`
-          );
-        } else {
-          // If the user hasn't been added to the userVotes array, add them
-          session.userVotes.push({ userId, hasVoted: true });
-          console.log(`User votes array: ${JSON.stringify(session.userVotes)}`);
-        }
-        await session.save();
-
-        // Now call the checkAllUsersVoted function
-        checkAllUsersVoted(session, io); // Pass the io object to the function
+      if (!session) {
+        console.error(`Session with code ${sessionCode} not found.`);
+        return;
       }
+
+      // Update the user's finishedVoting status
+      const userIndex = session.users.findIndex((u) => u.username === username);
+      if (userIndex !== -1) {
+        session.users[userIndex].finishedVoting = true;
+        await session.save();
+      }
+
+      // Check if all users are done voting
+      await checkAllUsersVoted(session);
     } catch (error) {
-      console.error(`Error when updating vote status: ${error}`);
+      console.error(`Error in 'done voting' event: ${error}`);
     }
   });
 
+  // Handle disconnection
   socket.on("disconnect", () => {
-    console.log("user disconnected");
+    // Additional logic for disconnect
   });
 });
+
+// // Socket.io connection handler
+// io.on("connection", (socket) => {
+//   //console.log("a user connected");
+
+//   // Handle joining a session
+//   socket.on("join session", (sessionCode, username) => {
+//     console.log(`User ${username} joined session: ${sessionCode}`);
+//     socket.join(sessionCode);
+//     // Notify others in the session
+//     socket.to(sessionCode).emit("userJoined", username);
+//   });
+
+//   socket.on("start voting", async (sessionCode) => {
+//     try {
+//       const session = await Session.findOne({ code: sessionCode });
+//       if (session) {
+//         session.lobbyOpen = false; // Close the lobby for new joins
+//         session.votingCompleted = false; // Reset the flag
+//         await session.save();
+
+//         // Broadcast to all users in the session to start voting
+//         io.to(sessionCode).emit("voting started");
+//       }
+//     } catch (error) {
+//       console.error(`Error when starting voting: ${error}`);
+//     }
+//   });
+
+//   socket.on("done voting", async (sessionCode, username) => {
+//     try {
+//       const session = await Session.findOne({ code: sessionCode });
+//       if (!session) {
+//         console.error(`Session with code ${sessionCode} not found.`);
+//         return;
+//       }
+
+//       const userIndex = session.users.findIndex((u) => u.username === username);
+//       if (userIndex !== -1) {
+//         session.users[userIndex].finishedVoting = true;
+//         await session.save();
+//         io.to(sessionCode).emit("user finished voting", { username });
+
+//         // Call checkAllUsersVoted with just the session code
+//         const results = await checkAllUsersVoted(session, io);
+//         if (results) {
+//           console.log(`Results: \n ${JSON.stringify(results)}`);
+//           io.to(sessionCode).emit("results", JSON.stringify(results));
+//         }
+//       } else {
+//         console.error(`User ${username} not found in session ${sessionCode}.`);
+//       }
+//     } catch (error) {
+//       console.error(`Error when handling done voting: ${error}`);
+//     }
+//   });
+
+//   socket.on("disconnect", () => {
+//     console.log("user disconnected");
+//   });
+// });
 
 // Use the error handler middleware last, after all routes
 app.use(errorHandler);

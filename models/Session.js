@@ -4,16 +4,21 @@ import mongoose from "mongoose";
 
 const userVoteSchema = new mongoose.Schema({
   username: { type: String, required: true },
-  hasVoted: { type: Boolean, default: false },
+  finishedVoting: { type: Boolean, default: false },
 });
 
 const sessionSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true },
-  users: [userVoteSchema], // Use the userVoteSchema for the users array
+  users: [
+    {
+      username: String,
+      finishedVoting: { type: Boolean, default: false },
+    },
+  ], // Use the userVoteSchema for the users array
 
   votes: [{ yelpBusinessId: String, count: Number }],
   createdAt: { type: Date, default: Date.now },
-  expiresAt: { type: Date, required: true },
+  expiresAt: { type: Date, required: true, index: { expires: "1h" } },
   lobbyOpen: { type: Boolean, required: true },
   sessionCreator: { type: String, required: true }, // Add this field
   restaurants: [
@@ -31,6 +36,7 @@ const sessionSchema = new mongoose.Schema({
       reviewCount: Number,
     },
   ],
+  votingCompleted: { type: Boolean, default: false },
 });
 
 sessionSchema.index(

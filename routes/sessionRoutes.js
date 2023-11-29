@@ -7,7 +7,7 @@ import {
   getSessionResults,
   getSession,
   closeSession,
-  updateHasVotedController,
+  updateUserVotingStatus,
 } from "../controllers/sessionController.js";
 import {
   validateCreateSession,
@@ -23,9 +23,6 @@ router.post("/:code/vote", vote);
 router.patch("/:code/close", closeSession);
 router.get("/:code/results", getSessionResults);
 router.get("/:code/details", getSession);
-router.put(
-  "/session/:code/user/:username/donevoting",
-  updateHasVotedController
-);
+router.put("/:code/user/:username/donevoting", updateUserVotingStatus);
 
 export default router;

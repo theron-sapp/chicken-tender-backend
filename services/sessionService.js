@@ -12,7 +12,7 @@ export const createSession = async (
 ) => {
   let code;
   let isUnique = false;
-  const expiresAt = new Date(new Date().getTime() + 2 * 60 * 60 * 1000); // 2 hours from now
+  const expiresAt = new Date(new Date().getTime() + 60 * 60 * 1000); // 2 hours from now
 
   while (!isUnique) {
     code = generateSessionCode();
@@ -33,7 +33,7 @@ export const createSession = async (
       code,
       users: [{ username }], // Changed to use an array of user objects
       sessionCreator: username, // Now using username as the session creator
-      expiresAt,
+      expiresAt: new Date(new Date().getTime() + 60 * 60 * 1000), // 1 hour from now
       restaurants,
       lobbyOpen: true, // This flag should start as true
     });
@@ -91,7 +91,7 @@ export const closeSession = async (code) => {
   return session; // Return the closed session
 };
 
-export const updateHasVotedBoolean = async (code, username) => {
+export const updateFinishedVotingBoolean = async (code, username) => {
   const session = await Session.findOne({ code });
 
   if (!session) {
@@ -105,9 +105,11 @@ export const updateHasVotedBoolean = async (code, username) => {
     throw new Error("User not found in session");
   }
 
-  user.hasVoted = true;
+  user.finishedVoting = true;
 
   await session.save();
+
+  console.log("Finished voting value set to true");
 
   return session;
 };

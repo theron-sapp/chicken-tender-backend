@@ -8,7 +8,7 @@ const YELP_API_KEY = process.env.YELP_API_KEY; // Assume this util gets the API 
 
 export async function fetchRestaurantsDataNoCords(city, state, radiusInMeters) {
   // Construct the Yelp API endpoint with the query parameters
-  const url = `https://api.yelp.com/v3/businesses/search?location=${city}%20${state}&radius=${radiusInMeters}&sort_by=best_match&limit=15`;
+  const url = `https://api.yelp.com/v3/businesses/search?location=${city}%20${state}&radius=${radiusInMeters}&sort_by=best_match&limit=2`;
 
   try {
     // Log the request details for debugging
@@ -67,7 +67,7 @@ export async function fetchRestaurantsDataWithCords(
   radiusInMeters
 ) {
   // Construct the Yelp API endpoint with the query parameters
-  const url = `https://api.yelp.com/v3/businesses/search?latitude=${latitude}&longitude=${longitude}&term=restaurant&radius=${radiusInMeters}&categories=&sort_by=best_match&limit=15`;
+  const url = `https://api.yelp.com/v3/businesses/search?latitude=${latitude}&longitude=${longitude}&term=restaurant&radius=${radiusInMeters}&categories=&sort_by=best_match&limit=2`;
 
   try {
     // Log the request details for debugging

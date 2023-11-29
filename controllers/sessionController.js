@@ -2,6 +2,8 @@
 
 import * as sessionService from "../services/sessionService.js";
 import * as votingService from "../services/votingService.js";
+import { updateFinishedVotingBoolean } from "../services/sessionService.js";
+import Session from "../models/Session.js";
 import { checkDailySessionLimit } from "../services/userService.js";
 import { io } from "../server.js";
 import { param } from "express-validator";
@@ -84,11 +86,12 @@ export const vote = async (req, res, next) => {
 export const getSessionResults = async (req, res, next) => {
   try {
     const { code } = req.params;
-    const results = await votingService.tallyVotes(code);
-    if (results.winningRestaurant) {
-      res
-        .status(200)
-        .json({ winner: results.winningRestaurant, tally: results.tally });
+    //const session = await sessionService.getSessionDetails(code);
+    const session = await sessionService.getSessionDetails(code);
+    const results = await votingService.tallyVotes(session);
+    if (results) {
+      // Instead of results.winningRestaurant
+      res.status(200).json({ winner: results });
     } else {
       res.status(200).json({ message: "Voting is not yet complete" });
     }
@@ -110,28 +113,83 @@ export const getSession = async (req, res, next) => {
   }
 };
 
-async function checkAllUsersVoted(session, io) {
-  // Check if every user in the session has `hasVoted` set to true
-  const allDone = session.userVotes.every((u) => u.hasVoted);
-  if (allDone) {
-    // If all users have voted, emit an event to all clients
-    io.to(session.code).emit("voting complete");
-    // Optionally, calculate and emit the winning restaurant here
-    const results = await votingService.tallyVotes(session.code);
-    if (results.winningRestaurant) {
-      io.to(session.code).emit("results", results);
+async function checkAllUsersVoted(session) {
+  try {
+    const allUsersVoted = session.users.every(
+      (user) => user.finishedVoting === true
+    );
+
+    if (allUsersVoted && !session.votingCompleted) {
+      session.votingCompleted = true; // Set the flag to true
+      await session.save(); // Save the session with the updated flag
+
+      // Emitting the 'voting complete' event
+      io.to(session.code).emit("voting complete");
+
+      return true;
+    } else {
+      return false;
     }
+  } catch (error) {
+    console.error(`Error in checkAllUsersVoted: ${error}`);
+    return false;
   }
 }
 
+// async function checkAllUsersVoted(session, io) {
+//   try {
+//     const allUsersVoted = session.users.every(
+//       (user) => user.finishedVoting === true
+//     );
+
+//     if (allUsersVoted && !session.votingCompleted) {
+//       console.log(`Emitting voting complete to client`);
+//       io.to(session.code).emit("voting complete");
+//       session.votingCompleted = true; // Set the flag to true
+//       await session.save(); // Save the session with the updated flag
+//     } else {
+//       console.log(
+//         "Not all users have finished voting or voting completion already emitted."
+//       );
+//     }
+//   } catch (error) {
+//     console.error(`Error in checkAllUsersVoted: ${error}`);
+//   }
+// }
+
+// async function checkAllUsersVoted(session, io) {
+//   const sessionAsParam = session;
+//   console.log(`Session as param: \n ${sessionAsParam}`);
+//   try {
+//     const allUsersVoted = session.users.every(
+//       (user) => user.finishedVoting === true
+//     );
+//     console.log(`allFinished: ${allUsersVoted}`);
+//     if (allUsersVoted) {
+//       console.log(`emitting voting complete to client`);
+//       io.to(session.code).emit("voting complete");
+//     } else {
+//       console.log("Not all users have finished voting.");
+//       return false;
+//     }
+//   } catch (error) {
+//     console.error(
+//       `Error in checkAllUsersVoted on line ${
+//         error.stack.split("\n")[1].split(":")[1]
+//       }: ${error.message}`
+//     );
+//   }
+// }
+
 export { checkAllUsersVoted };
 
-export const updateHasVotedController = async (req, res) => {
+export const updateUserVotingStatus = async (req, res) => {
   const { code, username } = req.params; // Assuming you're using route parameters
 
   try {
     // Call the service function to update the user's hasVoted status
-    const updatedSession = await updateHasVoted(code, username);
+    const updatedSession = await updateFinishedVotingBoolean(code, username);
+    io.to(code).emit("done voting", { code, username });
 
     // Send back the updated session
     res.json(updatedSession);
