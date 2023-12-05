@@ -35,11 +35,10 @@ mongoose
   .then(() => console.log("MongoDB connected successfully."))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Middleware to parse the body of the HTTP requests
 app.use(express.json());
+app.use(errorHandler);
 
-// Use the rate limiter middleware globally or on specific routes if needed
-app.use(createAccountLimiter);
+//app.use(createAccountLimiter);
 
 // Use the restaurant and session routes
 app.use("/api/restaurants", restaurantRoutes);
@@ -49,7 +48,6 @@ io.on("connection", (socket) => {
   socket.on("join session", (sessionCode, username) => {
     // Join the socket room
     socket.join(sessionCode);
-    // Additional logic
   });
 
   socket.on("start voting", async (sessionCode) => {
@@ -92,72 +90,33 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("user disconnected", async (sessionCode, username) => {
+    console.log(`User ${username} disconnected from session ${sessionCode}`);
+    try {
+      const session = await Session.findOne({ code: sessionCode });
+      if (session) {
+        const user = session.users.find((u) => u.username === username);
+        if (user) {
+          user.finishedVoting = true;
+          await session.save();
+
+          // Check if all users have finished voting
+          const allDone = await checkAllUsersVoted(session);
+          if (allDone) {
+            io.to(sessionCode).emit("voting complete");
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Error handling user disconnection: ${error}`);
+    }
+  });
+
   // Handle disconnection
   socket.on("disconnect", () => {
     // Additional logic for disconnect
   });
 });
-
-// // Socket.io connection handler
-// io.on("connection", (socket) => {
-//   //console.log("a user connected");
-
-//   // Handle joining a session
-//   socket.on("join session", (sessionCode, username) => {
-//     console.log(`User ${username} joined session: ${sessionCode}`);
-//     socket.join(sessionCode);
-//     // Notify others in the session
-//     socket.to(sessionCode).emit("userJoined", username);
-//   });
-
-//   socket.on("start voting", async (sessionCode) => {
-//     try {
-//       const session = await Session.findOne({ code: sessionCode });
-//       if (session) {
-//         session.lobbyOpen = false; // Close the lobby for new joins
-//         session.votingCompleted = false; // Reset the flag
-//         await session.save();
-
-//         // Broadcast to all users in the session to start voting
-//         io.to(sessionCode).emit("voting started");
-//       }
-//     } catch (error) {
-//       console.error(`Error when starting voting: ${error}`);
-//     }
-//   });
-
-//   socket.on("done voting", async (sessionCode, username) => {
-//     try {
-//       const session = await Session.findOne({ code: sessionCode });
-//       if (!session) {
-//         console.error(`Session with code ${sessionCode} not found.`);
-//         return;
-//       }
-
-//       const userIndex = session.users.findIndex((u) => u.username === username);
-//       if (userIndex !== -1) {
-//         session.users[userIndex].finishedVoting = true;
-//         await session.save();
-//         io.to(sessionCode).emit("user finished voting", { username });
-
-//         // Call checkAllUsersVoted with just the session code
-//         const results = await checkAllUsersVoted(session, io);
-//         if (results) {
-//           console.log(`Results: \n ${JSON.stringify(results)}`);
-//           io.to(sessionCode).emit("results", JSON.stringify(results));
-//         }
-//       } else {
-//         console.error(`User ${username} not found in session ${sessionCode}.`);
-//       }
-//     } catch (error) {
-//       console.error(`Error when handling done voting: ${error}`);
-//     }
-//   });
-
-//   socket.on("disconnect", () => {
-//     console.log("user disconnected");
-//   });
-// });
 
 // Use the error handler middleware last, after all routes
 app.use(errorHandler);

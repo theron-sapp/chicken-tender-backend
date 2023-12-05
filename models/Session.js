@@ -23,17 +23,17 @@ const sessionSchema = new mongoose.Schema({
   sessionCreator: { type: String, required: true }, // Add this field
   restaurants: [
     {
-      id: String, // Yelp ID of the restaurant
+      id: String,
       name: String,
       image: String,
       address: String,
       rating: Number,
       votes: Number,
-      cuisine: String,
+      // cuisine: String,
       price: String,
-      distance: Number,
+      // distance: Number,
       url: String,
-      reviewCount: Number,
+      // reviewCount: Number,
     },
   ],
   votingCompleted: { type: Boolean, default: false },

@@ -8,11 +8,12 @@ export const createSession = async (
   username,
   param1,
   param2,
-  radiusInMeters
+  radiusInMeters,
+  maxPriceLevel = 2
+  // type
 ) => {
   let code;
   let isUnique = false;
-  const expiresAt = new Date(new Date().getTime() + 60 * 60 * 1000); // 2 hours from now
 
   while (!isUnique) {
     code = generateSessionCode();
@@ -23,10 +24,13 @@ export const createSession = async (
   }
 
   try {
+    console.log(`Param1: ${param1}`);
     const restaurants = await fetchNearbyRestaurants(
       param1,
       param2,
-      radiusInMeters
+      radiusInMeters,
+      maxPriceLevel
+      // type
     );
 
     const newSession = await Session.create({
@@ -37,7 +41,6 @@ export const createSession = async (
       restaurants,
       lobbyOpen: true, // This flag should start as true
     });
-
     return newSession;
   } catch (error) {
     console.error(`Error: ${error}`);
@@ -86,7 +89,10 @@ export const closeSession = async (code) => {
   }
 
   session.lobbyOpen = false;
+
   await session.save();
+
+  // startVotingTimer(code);  // IMPLEMENTED ON FRONTEND
 
   return session; // Return the closed session
 };
@@ -112,4 +118,18 @@ export const updateFinishedVotingBoolean = async (code, username) => {
   console.log("Finished voting value set to true");
 
   return session;
+};
+
+const VOTING_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+export const startVotingTimer = (sessionCode) => {
+  setTimeout(async () => {
+    const session = await findSessionByCode(sessionCode);
+    if (!session.votingCompleted) {
+      processVotes(session);
+      session.votingCompleted = true;
+      await session.save();
+      io.to(sessionCode).emit("voting complete");
+    }
+  }, VOTING_DURATION);
 };

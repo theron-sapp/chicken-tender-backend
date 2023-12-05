@@ -10,21 +10,22 @@ import { param } from "express-validator";
 
 export const createSession = async (req, res, next) => {
   try {
-    const { username, param1, param2, radiusInMeters } = req.body;
+    const { username, param1, param2, radiusInMeters, maxPriceLevel } =
+      req.body;
     console.log(`Received params:`, {
       username,
       param1,
       param2,
       radiusInMeters,
+      maxPriceLevel,
     }); // Log the parameters
 
-    // Before creating a session, check if the user has reached the daily limit
-    //await checkDailySessionLimit(userId);
     const newSession = await sessionService.createSession(
       username,
       param1,
       param2,
-      radiusInMeters
+      radiusInMeters,
+      maxPriceLevel
     );
     res.status(201).json(newSession);
   } catch (error) {
@@ -33,7 +34,7 @@ export const createSession = async (req, res, next) => {
     ) {
       return res.status(429).json({ message: error.message });
     }
-    next(error); // Other errors are handled by the centralized error middleware
+    // next(error);
   }
 };
 
@@ -61,7 +62,7 @@ export const closeSession = async (req, res, next) => {
     if (error.message === "Session already closed.") {
       return res.status(409).json({ message: error.message });
     }
-    next(error); // Other errors are handled by the centralized error middleware
+    next(error);
   }
 };
 
@@ -135,51 +136,6 @@ async function checkAllUsersVoted(session) {
     return false;
   }
 }
-
-// async function checkAllUsersVoted(session, io) {
-//   try {
-//     const allUsersVoted = session.users.every(
-//       (user) => user.finishedVoting === true
-//     );
-
-//     if (allUsersVoted && !session.votingCompleted) {
-//       console.log(`Emitting voting complete to client`);
-//       io.to(session.code).emit("voting complete");
-//       session.votingCompleted = true; // Set the flag to true
-//       await session.save(); // Save the session with the updated flag
-//     } else {
-//       console.log(
-//         "Not all users have finished voting or voting completion already emitted."
-//       );
-//     }
-//   } catch (error) {
-//     console.error(`Error in checkAllUsersVoted: ${error}`);
-//   }
-// }
-
-// async function checkAllUsersVoted(session, io) {
-//   const sessionAsParam = session;
-//   console.log(`Session as param: \n ${sessionAsParam}`);
-//   try {
-//     const allUsersVoted = session.users.every(
-//       (user) => user.finishedVoting === true
-//     );
-//     console.log(`allFinished: ${allUsersVoted}`);
-//     if (allUsersVoted) {
-//       console.log(`emitting voting complete to client`);
-//       io.to(session.code).emit("voting complete");
-//     } else {
-//       console.log("Not all users have finished voting.");
-//       return false;
-//     }
-//   } catch (error) {
-//     console.error(
-//       `Error in checkAllUsersVoted on line ${
-//         error.stack.split("\n")[1].split(":")[1]
-//       }: ${error.message}`
-//     );
-//   }
-// }
 
 export { checkAllUsersVoted };
 
