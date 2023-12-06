@@ -20,13 +20,6 @@ export const fetchNearbyRestaurants = async (
   maxPriceLevel
   // type
 ) => {
-  console.log(`Fetching restaurants with:`, {
-    param1,
-    param2,
-    radiusInMeters,
-    maxPriceLevel,
-  }); // Log the parameters
-
   try {
     let restaurants;
 
@@ -36,6 +29,12 @@ export const fetchNearbyRestaurants = async (
       const latitude = parseFloat(param1);
       const longitude = parseFloat(param2);
 
+      console.log(`Fetching restaurants with:`, {
+        param1,
+        param2,
+        radiusInMeters,
+        maxPriceLevel,
+      }); // Log the parameters
       // Call the function for coordinates
       restaurants = await fetchRestaurantsDataWithCordsGoogle(
         latitude,

@@ -27,6 +27,9 @@ export const createSession = async (req, res, next) => {
       radiusInMeters,
       maxPriceLevel
     );
+    if (newSession.error) {
+      return res.status(400).json({ message: newSession.error });
+    }
     res.status(201).json(newSession);
   } catch (error) {
     if (
@@ -69,14 +72,10 @@ export const closeSession = async (req, res, next) => {
 export const vote = async (req, res, next) => {
   try {
     const { code } = req.params;
-    const { yelpBusinessId, vote } = req.body;
+    const { place_id, vote } = req.body;
 
     // Call the recordVote function from votingService
-    const updatedSession = await votingService.recordVote(
-      code,
-      yelpBusinessId,
-      vote
-    );
+    const updatedSession = await votingService.recordVote(code, place_id, vote);
     res.status(200).json({ message: "Vote recorded", session: updatedSession });
     console.log("Vote recorded");
   } catch (error) {
@@ -93,6 +92,7 @@ export const getSessionResults = async (req, res, next) => {
     if (results) {
       // Instead of results.winningRestaurant
       res.status(200).json({ winner: results });
+      await Session.findOneAndDelete({ code });
     } else {
       res.status(200).json({ message: "Voting is not yet complete" });
     }

@@ -2,7 +2,7 @@
 
 import Session from "../models/Session.js";
 
-export const recordVote = async (code, yelpBusinessId, userVote) => {
+export const recordVote = async (code, place_id, userVote) => {
   const session = await Session.findOne({ code });
 
   if (!session) {
@@ -11,17 +11,14 @@ export const recordVote = async (code, yelpBusinessId, userVote) => {
 
   // If the user votes 'like', find the vote object or create a new one, then increment the count.
   if (userVote === "like") {
-    let voteEntry = session.votes.find(
-      (v) => v.yelpBusinessId === yelpBusinessId
-    );
+    let voteEntry = session.votes.find((v) => v.place_id === place_id);
     if (voteEntry) {
       voteEntry.count++; // Increment existing count
     } else {
       // Create a new vote entry for the restaurant
-      session.votes.push({ yelpBusinessId, count: 1 });
+      session.votes.push({ place_id, count: 1 });
     }
   }
-  // No action needed if the user votes 'dislike'
 
   await session.save();
 
@@ -37,7 +34,7 @@ export const tallyVotes = async (session) => {
   // Find the restaurant with the highest votes count
   const winningRestaurant = session.restaurants.find((restaurant) => {
     const restaurantVotes = session.votes.find(
-      (vote) => vote.yelpBusinessId === restaurant.id
+      (vote) => vote.place_id === restaurant.id
     );
     return restaurantVotes && restaurantVotes.count === highestVotesCount;
   });

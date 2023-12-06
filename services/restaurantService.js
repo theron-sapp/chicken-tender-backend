@@ -130,11 +130,16 @@ export async function fetchRestaurantsDataWithCordsGoogle(
   let url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radiusInMeters}&type=restaurant&keyword=dining&opennow=true&maxprice=${maxPriceLevel}&key=${GOOGLE_API_KEY}`;
 
   try {
+    console.log(`Fetching restaurants: ${url}`);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     const data = await response.json();
+
+    if (data.status === "ZERO_RESULTS") {
+      throw new Error("No restaurants found in the specified area.");
+    }
 
     return data.results.map((restaurant) => {
       // Construct image URL using the photo_reference

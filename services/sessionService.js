@@ -24,7 +24,6 @@ export const createSession = async (
   }
 
   try {
-    console.log(`Param1: ${param1}`);
     const restaurants = await fetchNearbyRestaurants(
       param1,
       param2,
@@ -32,7 +31,12 @@ export const createSession = async (
       maxPriceLevel
       // type
     );
-
+    if (restaurants.length === 0) {
+      // Handle the scenario when no restaurants are found
+      return {
+        error: "No restaurants available in the specified area at this time.",
+      };
+    }
     const newSession = await Session.create({
       code,
       users: [{ username }], // Changed to use an array of user objects
@@ -43,6 +47,9 @@ export const createSession = async (
     });
     return newSession;
   } catch (error) {
+    if (error.message === "No restaurants found in the specified area.") {
+      return { error: error.message };
+    }
     console.error(`Error: ${error}`);
     throw error; // Make sure to throw the error so it can be caught and handled by the caller
   }

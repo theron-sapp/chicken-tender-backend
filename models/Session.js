@@ -16,7 +16,7 @@ const sessionSchema = new mongoose.Schema({
     },
   ], // Use the userVoteSchema for the users array
 
-  votes: [{ yelpBusinessId: String, count: Number }],
+  votes: [{ place_id: String, count: Number }],
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true, index: { expires: "1h" } },
   lobbyOpen: { type: Boolean, required: true },
