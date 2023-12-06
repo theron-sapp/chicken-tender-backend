@@ -2,7 +2,7 @@
 
 import Session from "../models/Session.js";
 
-export const recordVote = async (code, userId, yelpBusinessId, userVote) => {
+export const recordVote = async (code, place_id, userVote) => {
   const session = await Session.findOne({ code });
 
   if (!session) {
@@ -11,17 +11,14 @@ export const recordVote = async (code, userId, yelpBusinessId, userVote) => {
 
   // If the user votes 'like', find the vote object or create a new one, then increment the count.
   if (userVote === "like") {
-    let voteEntry = session.votes.find(
-      (v) => v.yelpBusinessId === yelpBusinessId
-    );
+    let voteEntry = session.votes.find((v) => v.place_id === place_id);
     if (voteEntry) {
       voteEntry.count++; // Increment existing count
     } else {
       // Create a new vote entry for the restaurant
-      session.votes.push({ yelpBusinessId, count: 1 });
+      session.votes.push({ place_id, count: 1 });
     }
   }
-  // No action needed if the user votes 'dislike'
 
   await session.save();
 
@@ -29,37 +26,33 @@ export const recordVote = async (code, userId, yelpBusinessId, userVote) => {
   return session;
 };
 
-export const tallyVotes = async (code) => {
-  const session = await Session.findOne({ code });
-  if (!session) {
-    throw new Error("Session not found");
+export const tallyVotes = async (session) => {
+  const highestVotesCount = Math.max(
+    ...session.votes.map((vote) => vote.count)
+  );
+
+  // Find the restaurant with the highest votes count
+  const winningRestaurant = session.restaurants.find((restaurant) => {
+    const restaurantVotes = session.votes.find(
+      (vote) => vote.place_id === restaurant.id
+    );
+    return restaurantVotes && restaurantVotes.count === highestVotesCount;
+  });
+
+  // Return the restaurant name
+  if (winningRestaurant) {
+    const { id, name, image, address, rating, price, distance } =
+      winningRestaurant;
+    return {
+      id,
+      name,
+      image,
+      address,
+      rating,
+      price,
+      distance,
+    };
+  } else {
+    return null;
   }
-
-  // Check if all users have finished voting.
-  const allHaveVoted = session.userStatuses.every((user) => user.hasVoted);
-  if (!allHaveVoted) {
-    throw new Error("Voting is not yet complete");
-  }
-
-  // If all users have voted, tally the votes.
-  const tally = session.votes.reduce((acc, vote) => {
-    if (!acc[vote.yelpBusinessId]) {
-      acc[vote.yelpBusinessId] = 0;
-    }
-    acc[vote.yelpBusinessId] += vote.count;
-    return acc;
-  }, {});
-
-  // Find the restaurant with the most votes.
-  let maxVotes = 0;
-  let winningRestaurant = null;
-  for (const [key, value] of Object.entries(tally)) {
-    if (value > maxVotes) {
-      maxVotes = value;
-      winningRestaurant = key;
-    }
-  }
-
-  // Respond with the winning restaurant.
-  return { winningRestaurant, tally };
 };

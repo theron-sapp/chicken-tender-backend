@@ -37,33 +37,29 @@ mongoose
   .then(() => console.log("MongoDB connected successfully."))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Middleware to parse the body of the HTTP requests
 app.use(express.json());
+app.use(errorHandler);
 
-// Use the rate limiter middleware globally or on specific routes if needed
-app.use(createAccountLimiter);
+//app.use(createAccountLimiter);
 
 // Use the restaurant and session routes
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/sessions", sessionRoutes);
 
-// Socket.io connection handler
 io.on("connection", (socket) => {
-  //console.log("a user connected");
-
-  // Handle joining a session
-  socket.on("join session", (sessionCode, userId) => {
-    console.log(`User ${userId} joined session: ${sessionCode}`);
+  socket.on("join session", (sessionCode, username) => {
+    // Join the socket room
     socket.join(sessionCode);
-    // Notify others in the session
-    socket.to(sessionCode).emit("userJoined", userId);
   });
 
   socket.on("start voting", async (sessionCode) => {
+    console.log(`Start voting received for session code: ${sessionCode}`);
+
     try {
       const session = await Session.findOne({ code: sessionCode });
       if (session) {
         session.lobbyOpen = false; // Close the lobby for new joins
+        session.votingCompleted = false; // Reset the flag
         await session.save();
 
         // Broadcast to all users in the session to start voting
@@ -74,42 +70,53 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle closing a session
-  socket.on("close session", (sessionCode) => {
-    // You would also update the session's lobbyOpen status in the database here
-    socket.to(sessionCode).emit("session closed");
-  });
-
-  // Inside the io.on("connection") callback
-  socket.on("done voting", async ({ sessionCode, userId }) => {
+  socket.on("done voting", async (sessionCode, username) => {
     try {
       const session = await Session.findOne({ code: sessionCode });
-      if (session) {
-        const userIndex = session.userVotes.findIndex(
-          (u) => u.userId === userId
-        );
-        if (userIndex !== -1) {
-          session.userVotes[userIndex].hasVoted = true;
-          console.log(
-            `User ${userId} voting status: ${session.userVotes[userIndex].hasVoted}`
-          );
-        } else {
-          // If the user hasn't been added to the userVotes array, add them
-          session.userVotes.push({ userId, hasVoted: true });
-          console.log(`User votes array: ${JSON.stringify(session.userVotes)}`);
-        }
-        await session.save();
-
-        // Now call the checkAllUsersVoted function
-        checkAllUsersVoted(session, io); // Pass the io object to the function
+      if (!session) {
+        console.error(`Session with code ${sessionCode} not found.`);
+        return;
       }
+
+      // Update the user's finishedVoting status
+      const userIndex = session.users.findIndex((u) => u.username === username);
+      if (userIndex !== -1) {
+        session.users[userIndex].finishedVoting = true;
+        await session.save();
+      }
+
+      // Check if all users are done voting
+      await checkAllUsersVoted(session);
     } catch (error) {
-      console.error(`Error when updating vote status: ${error}`);
+      console.error(`Error in 'done voting' event: ${error}`);
     }
   });
 
+  socket.on("user disconnected", async (sessionCode, username) => {
+    console.log(`User ${username} disconnected from session ${sessionCode}`);
+    try {
+      const session = await Session.findOne({ code: sessionCode });
+      if (session) {
+        const user = session.users.find((u) => u.username === username);
+        if (user) {
+          user.finishedVoting = true;
+          await session.save();
+
+          // Check if all users have finished voting
+          const allDone = await checkAllUsersVoted(session);
+          if (allDone) {
+            io.to(sessionCode).emit("voting complete");
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Error handling user disconnection: ${error}`);
+    }
+  });
+
+  // Handle disconnection
   socket.on("disconnect", () => {
-    console.log("user disconnected");
+    // Additional logic for disconnect
   });
 });
 
