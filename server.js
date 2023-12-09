@@ -47,6 +47,7 @@ app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/sessions", sessionRoutes);
 
 io.on("connection", (socket) => {
+  console.log("Connected");
   socket.on("join session", (sessionCode, username) => {
     // Join the socket room
     socket.join(sessionCode);
