@@ -2,10 +2,10 @@
 
 import mongoose from "mongoose";
 
-const userVoteSchema = new mongoose.Schema({
-  username: { type: String, required: true },
-  finishedVoting: { type: Boolean, default: false },
-});
+// const userVoteSchema = new mongoose.Schema({
+//   username: { type: String, required: true },
+//   finishedVoting: { type: Boolean, default: false },
+// });
 
 const sessionSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true },
