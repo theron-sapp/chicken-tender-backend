@@ -124,7 +124,7 @@ async function checkAllUsersVoted(session) {
       await session.save(); // Save the session with the updated flag
 
       // Emitting the 'voting complete' event
-      io.to(session.code).emit("voting complete");
+      // io.to(session.code).emit("voting complete");
 
       return true;
     } else {
@@ -144,7 +144,7 @@ export const updateUserVotingStatus = async (req, res) => {
   try {
     // Call the service function to update the user's hasVoted status
     const updatedSession = await updateFinishedVotingBoolean(code, username);
-    io.to(code).emit("done voting", { code, username });
+    // io.to(code).emit("done voting", { code, username });
 
     // Send back the updated session
     res.json(updatedSession);
