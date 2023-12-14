@@ -35,7 +35,6 @@ export const fetchNearbyRestaurants = async (
         radiusInMeters,
         maxPriceLevel,
       }); // Log the parameters
-      // Call the function for coordinates
       restaurants = await fetchRestaurantsDataWithCordsGoogle(
         latitude,
         longitude,

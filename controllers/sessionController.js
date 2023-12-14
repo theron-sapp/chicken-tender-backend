@@ -47,9 +47,8 @@ export const joinSession = async (req, res, next) => {
     const { username } = req.body; // No longer userId
 
     const session = await sessionService.joinSession(code, username);
-    io.to(code).emit("user joined", { username }); // Send username instead of userId
 
-    res.status(200).json({ message: "Joined session", session });
+    res.status(200).json(session);
   } catch (error) {
     next(error);
   }
