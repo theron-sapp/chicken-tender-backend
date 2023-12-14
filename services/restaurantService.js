@@ -127,40 +127,63 @@ export async function fetchRestaurantsDataWithCordsGoogle(
   radiusInMeters,
   maxPriceLevel = 2
 ) {
-  let url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radiusInMeters}&type=restaurant&keyword=dining&opennow=true&maxprice=${maxPriceLevel}&key=${GOOGLE_API_KEY}`;
+  console.log("Fetching restaurants with new function");
+  let restaurants = new Map(); // Using a map to track unique restaurants by name
+  let nextPageToken = null;
+  let attempts = 0; // To prevent potential infinite loops
 
-  try {
-    console.log(`Fetching restaurants: ${url}`);
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+  do {
+    let url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radiusInMeters}&type=restaurant&keyword=dining&opennow=true&minprice=${
+      maxPriceLevel - 1
+    }&maxprice=${maxPriceLevel}&key=${GOOGLE_API_KEY}`;
+
+    if (nextPageToken) {
+      console.log(`Next page token: ${nextPageToken}`);
+      url += `&pagetoken=${nextPageToken}`;
     }
-    const data = await response.json();
 
-    if (data.status === "ZERO_RESULTS") {
-      throw new Error("No restaurants found in the specified area.");
+    try {
+      console.log(`Fetching restaurants: ${url}`);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+
+      if (data.status === "ZERO_RESULTS") {
+        throw new Error("No restaurants found in the specified area.");
+      }
+
+      data.results.forEach((restaurant) => {
+        if (!restaurants.has(restaurant.name)) {
+          // Check for unique restaurant name
+          const photoReference = restaurant.photos?.[0]?.photo_reference;
+          const imageUrl = photoReference
+            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photoReference}&key=${GOOGLE_API_KEY}`
+            : "";
+
+          restaurants.set(restaurant.name, {
+            id: restaurant.place_id,
+            name: restaurant.name,
+            image: imageUrl,
+            address: restaurant.vicinity,
+            rating: restaurant.rating,
+            votes: 0,
+            price: restaurant.price_level?.toString() || "",
+            url: `https://www.google.com/maps/place/?q=place_id:${restaurant.place_id}`,
+          });
+        }
+      });
+
+      nextPageToken = data.next_page_token || null;
+      attempts++;
+    } catch (error) {
+      console.error("Error fetching restaurants:", error);
+      throw error;
     }
 
-    return data.results.map((restaurant) => {
-      // Construct image URL using the photo_reference
-      const photoReference = restaurant.photos?.[0]?.photo_reference;
-      const imageUrl = photoReference
-        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photoReference}&key=${GOOGLE_API_KEY}`
-        : ""; // Default to an empty string if no photo_reference
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Google API requires a short delay before the next page token becomes valid
+  } while (restaurants.size < 20 && nextPageToken && attempts < 2);
 
-      return {
-        id: restaurant.place_id,
-        name: restaurant.name,
-        image: imageUrl,
-        address: restaurant.vicinity,
-        rating: restaurant.rating,
-        votes: 0,
-        price: restaurant.price_level?.toString() || "",
-        url: `https://www.google.com/maps/place/?q=place_id:${restaurant.place_id}`,
-      };
-    });
-  } catch (error) {
-    console.error("Error fetching restaurants:", error);
-    throw error;
-  }
+  return Array.from(restaurants.values());
 }
