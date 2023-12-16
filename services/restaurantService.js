@@ -183,7 +183,20 @@ export async function fetchRestaurantsDataWithCordsGoogle(
     }
 
     await new Promise((resolve) => setTimeout(resolve, 2000)); // Google API requires a short delay before the next page token becomes valid
-  } while (restaurants.size < 20 && nextPageToken && attempts < 2);
+  } while (restaurants.size < 15 && nextPageToken && attempts < 2);
 
-  return Array.from(restaurants.values());
+  // Convert Map to Array and shuffle
+  let shuffledRestaurants = Array.from(restaurants.values());
+  shuffleArray(shuffledRestaurants);
+
+  // Trim to first 15 elements
+  return shuffledRestaurants.slice(0, 15);
+}
+
+// Utility function to shuffle an array
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
 }

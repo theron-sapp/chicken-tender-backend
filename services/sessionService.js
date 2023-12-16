@@ -75,6 +75,21 @@ export const joinSession = async (code, username) => {
   return session;
 };
 
+export const leaveSession = async (code, username) => {
+  const session = await Session.findOne({ code });
+  if (!session) {
+    throw new Error("Session not found");
+  }
+
+  const userExists = session.users.some((user) => user.username === username);
+  if (userExists) {
+    session.users = session.users.filter((user) => user.username !== username);
+    await session.save();
+  }
+
+  return session;
+};
+
 export const getSessionDetails = async (code) => {
   const session = await Session.findOne({ code });
   if (!session) {

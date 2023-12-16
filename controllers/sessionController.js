@@ -54,6 +54,19 @@ export const joinSession = async (req, res, next) => {
   }
 };
 
+export const leaveSession = async (req, res, next) => {
+  try {
+    const { code } = req.params;
+    const { username } = req.body; // No longer userId
+
+    const session = await sessionService.leaveSession(code, username);
+
+    res.status(200).json(session);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const closeSession = async (req, res, next) => {
   try {
     const { code } = req.params; // Get the code from the route parameter
@@ -81,24 +94,6 @@ export const vote = async (req, res, next) => {
     next(error); // Error handling is now centralized
   }
 };
-
-// export const getSessionResults = async (req, res, next) => {
-//   try {
-//     const { code } = req.params;
-//     //const session = await sessionService.getSessionDetails(code);
-//     const session = await sessionService.getSessionDetails(code);
-//     const results = await votingService.tallyVotes(session);
-//     if (results) {
-//       // Instead of results.winningRestaurant
-//       res.status(200).json({ winner: results });
-//       await Session.findOneAndDelete({ code });
-//     } else {
-//       res.status(200).json({ message: "Voting is not yet complete" });
-//     }
-//   } catch (error) {
-//     next(error);
-//   }
-// };
 
 export const getSessionResults = async (req, res, next) => {
   try {
@@ -136,6 +131,29 @@ export const getSession = async (req, res, next) => {
     }
     res.status(200).json(session);
   } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteSession = async (req, res, next) => {
+  try {
+    const { code, username } = req.params;
+    const session = await Session.findOne({ code });
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    if (session.sessionCreator !== username) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized to delete this session" });
+    }
+
+    await Session.findOneAndDelete({ code });
+    res.status(200).json({ message: "Session deleted" });
+  } catch (error) {
+    console.error("Error deleting session:", error);
     next(error);
   }
 };
