@@ -37,6 +37,15 @@ const sessionSchema = new mongoose.Schema({
     },
   ],
   votingCompleted: { type: Boolean, default: false },
+  winningRestaurant: {
+    id: String,
+    name: String,
+    image: String,
+    address: String,
+    rating: Number,
+    price: String,
+    distance: Number,
+  },
 });
 
 sessionSchema.index(

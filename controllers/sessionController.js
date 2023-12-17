@@ -85,13 +85,11 @@ export const vote = async (req, res, next) => {
   try {
     const { code } = req.params;
     const { place_id, vote } = req.body;
-
-    // Call the recordVote function from votingService
     const updatedSession = await votingService.recordVote(code, place_id, vote);
     res.status(200).json({ message: "Vote recorded", session: updatedSession });
     console.log("Vote recorded");
   } catch (error) {
-    next(error); // Error handling is now centralized
+    next(error);
   }
 };
 
@@ -99,18 +97,14 @@ export const getSessionResults = async (req, res, next) => {
   try {
     const { code } = req.params;
     const session = await sessionService.getSessionDetails(code);
-    const results = await votingService.tallyVotes(session);
 
-    if (results) {
-      res.status(200).json({ winner: results });
+    if (session.winningRestaurant) {
+      res.status(200).json({ winner: session.winningRestaurant });
 
-      // Delay the session deletion by 5 minutes
       setTimeout(async () => {
         try {
-          // Try to delete the session and ignore errors if not found
           await Session.findOneAndDelete({ code });
         } catch (error) {
-          // Log the error or handle it silently
           console.log("Session not found or already deleted.");
         }
       }, 5 * 60 * 1000); // 5 minutes in milliseconds
@@ -166,8 +160,9 @@ async function checkAllUsersVoted(session) {
     );
 
     if (allUsersVoted && !session.votingCompleted) {
-      session.votingCompleted = true; // Set the flag to true
-      await session.save(); // Save the session with the updated flag
+      session.votingCompleted = true;
+      await votingService.tallyVotes(session);
+      await session.save();
 
       // Emitting the 'voting complete' event
       // io.to(session.code).emit("voting complete");
@@ -188,14 +183,11 @@ export const updateUserVotingStatus = async (req, res) => {
   const { code, username } = req.params; // Assuming you're using route parameters
 
   try {
-    // Call the service function to update the user's hasVoted status
     const updatedSession = await updateFinishedVotingBoolean(code, username);
     // io.to(code).emit("done voting", { code, username });
     checkAllUsersVoted(updatedSession);
-    // Send back the updated session
     res.json(updatedSession);
   } catch (error) {
-    // If there's an error, send back an error message
     res.status(400).json({ message: error.message });
   }
 };

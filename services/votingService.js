@@ -58,15 +58,26 @@ export const recordVote = async (code, place_id, userVote) => {
 // };
 
 export const tallyVotes = async (session) => {
+  // if (
+  //   session.winningRestaurant &&
+  //   Object.keys(session.winningRestaurant).length > 0
+  // ) {
+  //   console.log("votingserver.js line 62 - Winning restaurant already set");
+  //   return session.winningRestaurant;
+  // }
+
   const highestVotesCount = Math.max(
     ...session.votes.map((vote) => vote.count)
   );
+
+  console.log("votingservice.js line 70");
 
   // Find all restaurants with the highest votes count
   const topVotedRestaurants = session.restaurants.filter((restaurant) => {
     const restaurantVotes = session.votes.find(
       (vote) => vote.place_id === restaurant.id
     );
+    console.log("votingservice.js line 75");
     return restaurantVotes && restaurantVotes.count === highestVotesCount;
   });
 
@@ -74,18 +85,21 @@ export const tallyVotes = async (session) => {
   if (topVotedRestaurants.length > 0) {
     const randomIndex = Math.floor(Math.random() * topVotedRestaurants.length);
     const winningRestaurant = topVotedRestaurants[randomIndex];
+    console.log(`Winning restaurant: ${winningRestaurant}`);
 
-    const { id, name, image, address, rating, price, distance } =
-      winningRestaurant;
-    return {
-      id,
-      name,
-      image,
-      address,
-      rating,
-      price,
-      distance,
+    // Update the session with the winning restaurant
+    session.winningRestaurant = {
+      id: winningRestaurant.id,
+      name: winningRestaurant.name,
+      image: winningRestaurant.image,
+      address: winningRestaurant.address,
+      rating: winningRestaurant.rating,
+      price: winningRestaurant.price,
+      distance: winningRestaurant.distance,
     };
+    await session.save();
+    console.log("votingservice.js line 96");
+    return session.winningRestaurant;
   } else {
     return null;
   }
