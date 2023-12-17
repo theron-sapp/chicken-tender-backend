@@ -190,7 +190,7 @@ export async function fetchRestaurantsDataWithCordsGoogle(
   shuffleArray(shuffledRestaurants);
 
   // Trim to first 15 elements
-  return shuffledRestaurants.slice(0, 5);
+  return shuffledRestaurants.slice(0, 15);
 }
 
 // Utility function to shuffle an array
