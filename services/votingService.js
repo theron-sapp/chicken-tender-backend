@@ -27,28 +27,39 @@ import Session from "../models/Session.js";
 // };
 
 export const recordVote = async (code, place_id, userVote) => {
-  if (userVote !== "like") {
-    // Handle the case where the vote is not a 'like' if necessary
-    return;
-  }
+  // Define a helper function to attempt the vote update
+  const attemptVoteUpdate = async (retryCount = 0) => {
+    try {
+      const session = await Session.findOne({ code });
 
-  // Use the atomic $inc operator to update the votes array
-  const updateResult = await Session.updateOne(
-    { code, "votes.place_id": place_id },
-    { $inc: { "votes.$.count": 1 } }
-  );
+      if (!session) {
+        throw new Error("Session not found");
+      }
 
-  // If the vote doesn't exist yet, add it to the array
-  if (updateResult.nModified === 0) {
-    await Session.updateOne(
-      { code },
-      { $push: { votes: { place_id, count: 1 } } }
-    );
-  }
+      if (userVote === "like") {
+        let voteEntry = session.votes.find((v) => v.place_id === place_id);
+        if (voteEntry) {
+          voteEntry.count++;
+        } else {
+          session.votes.push({ place_id, count: 1 });
+        }
+      }
 
-  // Return the updated session object
-  // Note: This will not return the modified session. If you need the updated session, you must query it again.
-  return Session.findOne({ code });
+      await session.save();
+      return session;
+    } catch (error) {
+      // Check if the error is a VersionError and the retryCount is below the threshold
+      if (error.name === "VersionError" && retryCount < 3) {
+        console.log("Retrying vote update due to VersionError");
+        return await attemptVoteUpdate(retryCount + 1);
+      } else {
+        throw error; // Re-throw the error if it's not a VersionError or retry count exceeded
+      }
+    }
+  };
+
+  // Initial call to the helper function
+  return await attemptVoteUpdate();
 };
 
 // export const tallyVotes = async (session) => {
