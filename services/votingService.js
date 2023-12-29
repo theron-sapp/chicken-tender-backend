@@ -2,28 +2,53 @@
 
 import Session from "../models/Session.js";
 
+// export const recordVote = async (code, place_id, userVote) => {
+//   const session = await Session.findOne({ code });
+
+//   if (!session) {
+//     throw new Error("Session not found");
+//   }
+
+//   // If the user votes 'like', find the vote object or create a new one, then increment the count.
+//   if (userVote === "like") {
+//     let voteEntry = session.votes.find((v) => v.place_id === place_id);
+//     if (voteEntry) {
+//       voteEntry.count++; // Increment existing count
+//     } else {
+//       // Create a new vote entry for the restaurant
+//       session.votes.push({ place_id, count: 1 });
+//     }
+//   }
+
+//   await session.save();
+
+//   // Return the updated session object
+//   return session;
+// };
+
 export const recordVote = async (code, place_id, userVote) => {
-  const session = await Session.findOne({ code });
-
-  if (!session) {
-    throw new Error("Session not found");
+  if (userVote !== "like") {
+    // Handle the case where the vote is not a 'like' if necessary
+    return;
   }
 
-  // If the user votes 'like', find the vote object or create a new one, then increment the count.
-  if (userVote === "like") {
-    let voteEntry = session.votes.find((v) => v.place_id === place_id);
-    if (voteEntry) {
-      voteEntry.count++; // Increment existing count
-    } else {
-      // Create a new vote entry for the restaurant
-      session.votes.push({ place_id, count: 1 });
-    }
-  }
+  // Use the atomic $inc operator to update the votes array
+  const updateResult = await Session.updateOne(
+    { code, "votes.place_id": place_id },
+    { $inc: { "votes.$.count": 1 } }
+  );
 
-  await session.save();
+  // If the vote doesn't exist yet, add it to the array
+  if (updateResult.nModified === 0) {
+    await Session.updateOne(
+      { code },
+      { $push: { votes: { place_id, count: 1 } } }
+    );
+  }
 
   // Return the updated session object
-  return session;
+  // Note: This will not return the modified session. If you need the updated session, you must query it again.
+  return Session.findOne({ code });
 };
 
 // export const tallyVotes = async (session) => {
