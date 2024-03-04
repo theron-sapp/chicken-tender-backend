@@ -9,9 +9,11 @@ export const createSession = async (
   param1,
   param2,
   radiusInMeters,
-  maxPriceLevel = 2
-  // type
+  maxPriceLevel = 2,
+  restaurantList = [],
+  onlyList = false
 ) => {
+  let restaurants = [];
   let code;
   let isUnique = false;
 
@@ -23,35 +25,44 @@ export const createSession = async (
     }
   }
 
+  console.log(`Only List value: ${onlyList}`);
+
   try {
-    const restaurants = await fetchNearbyRestaurants(
-      param1,
-      param2,
-      radiusInMeters,
-      maxPriceLevel
-      // type
-    );
+    if (onlyList !== "true" && onlyList !== true) {
+      console.log("Fetching restaurants");
+      restaurants = await fetchNearbyRestaurants(
+        param1,
+        param2,
+        radiusInMeters,
+        maxPriceLevel
+      );
+    }
+
+    if (restaurantList && restaurantList.length > 0) {
+      restaurants = [...restaurantList, ...restaurants];
+    }
+
+    console.log(`Final Restaurant List: \n${JSON.stringify(restaurants)}`);
+
     if (restaurants.length === 0) {
-      // Handle the scenario when no restaurants are found
       return {
         error: "No restaurants available in the specified area at this time.",
       };
     }
+
     const newSession = await Session.create({
       code,
-      users: [{ username }], // Changed to use an array of user objects
-      sessionCreator: username, // Now using username as the session creator
+      users: [{ username }],
+      sessionCreator: username,
       expiresAt: new Date(new Date().getTime() + 60 * 60 * 1000), // 1 hour from now
-      restaurants,
-      lobbyOpen: true, // This flag should start as true
+      restaurants, // This should now be correctly structured
+      lobbyOpen: true,
     });
+
     return newSession;
   } catch (error) {
-    if (error.message === "No restaurants found in the specified area.") {
-      return { error: error.message };
-    }
     console.error(`Error: ${error}`);
-    throw error; // Make sure to throw the error so it can be caught and handled by the caller
+    throw error;
   }
 };
 

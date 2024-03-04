@@ -10,26 +10,41 @@ import { param } from "express-validator";
 
 export const createSession = async (req, res, next) => {
   try {
-    const { username, param1, param2, radiusInMeters, maxPriceLevel } =
-      req.body;
+    const {
+      username,
+      param1,
+      param2,
+      radiusInMeters,
+      maxPriceLevel,
+      restaurantList,
+      onlyList,
+    } = req.body;
     console.log(`Received params:`, {
       username,
       param1,
       param2,
       radiusInMeters,
       maxPriceLevel,
+      restaurantList,
+      onlyList,
     }); // Log the parameters
+    console.log(`restaurantList: ${JSON.stringify(restaurantList)}`);
 
     const newSession = await sessionService.createSession(
       username,
       param1,
       param2,
       radiusInMeters,
-      maxPriceLevel
+      maxPriceLevel,
+      restaurantList,
+      onlyList
     );
     if (newSession.error) {
       return res.status(400).json({ message: newSession.error });
     }
+    console.log(
+      `Session Controller\n\tCreate Session\n\t\tSession: ${newSession}`
+    );
     res.status(201).json(newSession);
   } catch (error) {
     if (
